@@ -109,41 +109,52 @@ export default function ReportsModule() {
         workerBalances[worker.id] = worker.opening_balance || 0;
       });
 
-      for (const transaction of allTransactions) {
-        const worker = 'worker' in transaction ? transaction.worker : workers.find(w => w.id === transaction.worker_id);
-        if (!worker) continue;
+      // Generate detailed report data per worker
+      for (const worker of workers) {
+        let runningBalance = worker.opening_balance || 0;
 
-        let wageAmount = 0;
-        let paymentAmount = 0;
-        let attendanceStatus = '';
-        let category = '';
-        let subcategory = '';
-        let narration = '';
+        // Get all transactions for this worker, sorted by date
+        const workerTransactions = allTransactions
+          .filter(t => {
+            // For attendance: t.worker_id, for payment: t.worker_id or t.worker?.id
+            const id = t.worker_id ?? (t.worker ? t.worker.id : undefined);
+            return id === worker.id;
+          })
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-        if (transaction.type === 'attendance') {
-          wageAmount = transaction.amount || 0;
-          attendanceStatus = transaction.status;
-          category = transaction.category?.name || '';
-          subcategory = transaction.subcategory?.name || '';
-          narration = transaction.narration || '';
-          workerBalances[worker.id] += wageAmount;
-        } else {
-          paymentAmount = Math.abs(transaction.amount);
-          narration = transaction.narration || '';
-          workerBalances[worker.id] -= paymentAmount;
+        for (const transaction of workerTransactions) {
+          let wageAmount = 0;
+          let paymentAmount = 0;
+          let attendanceStatus = '';
+          let category = '';
+          let subcategory = '';
+          let narration = '';
+
+          if (transaction.type === 'attendance') {
+            wageAmount = transaction.amount || 0;
+            attendanceStatus = transaction.status;
+            category = transaction.category?.name || '';
+            subcategory = transaction.subcategory?.name || '';
+            narration = transaction.narration || '';
+            runningBalance += wageAmount;
+          } else {
+            paymentAmount = Math.abs(transaction.amount);
+            narration = transaction.narration || '';
+            runningBalance -= paymentAmount;
+          }
+
+          detailedData.push({
+            date: format(new Date(transaction.date), 'yyyy-MM-dd'),
+            workerName: worker.name,
+            attendanceStatus,
+            category,
+            subcategory,
+            wageAmount,
+            paymentAmount,
+            runningBalance,
+            narration
+          });
         }
-
-        detailedData.push({
-          date: format(new Date(transaction.date), 'yyyy-MM-dd'),
-          workerName: worker.name,
-          attendanceStatus,
-          category,
-          subcategory,
-          wageAmount,
-          paymentAmount,
-          runningBalance: workerBalances[worker.id],
-          narration
-        });
       }
 
       // Generate summary report (already correct)
