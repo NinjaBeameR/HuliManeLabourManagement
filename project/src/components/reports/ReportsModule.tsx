@@ -111,12 +111,14 @@ export default function ReportsModule() {
 
       // Generate detailed report data per worker
       for (const worker of workers) {
+        // If a specific worker is selected, skip others
+        if (filters.workerId && worker.id !== filters.workerId) continue;
+
         let runningBalance = worker.opening_balance || 0;
 
         // Get all transactions for this worker, sorted by date
         const workerTransactions = allTransactions
           .filter(t => {
-            // For attendance: t.worker_id, for payment: t.worker_id or t.worker?.id
             const id = t.worker_id ?? (t.worker ? t.worker.id : undefined);
             return id === worker.id;
           })
