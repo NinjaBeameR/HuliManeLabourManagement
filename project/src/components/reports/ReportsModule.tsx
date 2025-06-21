@@ -453,7 +453,9 @@ export default function ReportsModule() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {reportData.detailed.slice(0, 10).map((row, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-sm text-gray-900">{format(new Date(row.date), 'MMM dd')}</td>
+                      <td className="px-3 py-2 text-sm text-gray-900">
+                        {row.workerName === 'Total' ? '' : format(new Date(row.date), 'MMM dd')}
+                      </td>
                       <td className="px-3 py-2 text-sm text-gray-900">{row.workerName}</td>
                       <td className="px-3 py-2 text-sm">
                         {row.attendanceStatus && (
