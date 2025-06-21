@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, User, Clock, DollarSign, FileText } from 'lucide-react';
 import { useWorkers, useCategories, useAttendance, calculateWorkerBalance } from '../../hooks/useSupabase';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 interface AttendanceFormData {
   worker_id: string;
@@ -35,7 +35,7 @@ export default function AttendanceForm() {
   });
   
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<AttendanceFormData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof AttendanceFormData, string>>>({});
 
   const availableSubcategories = subcategories.filter(
     sub => sub.category_id === formData.category_id
@@ -61,7 +61,7 @@ export default function AttendanceForm() {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<AttendanceFormData> = {};
+    const newErrors: Partial<Record<keyof AttendanceFormData, string>> = {};
     
     if (!formData.worker_id) newErrors.worker_id = 'Worker is required';
     if (!formData.date) newErrors.date = 'Date is required';
@@ -89,8 +89,8 @@ export default function AttendanceForm() {
       const attendanceData = {
         ...formData,
         amount: formData.status === 'absent' ? 0 : formData.amount,
-        category_id: formData.status === 'absent' ? null : formData.category_id,
-        subcategory_id: formData.status === 'absent' ? null : formData.subcategory_id,
+        category_id: formData.status === 'absent' ? undefined : formData.category_id,
+        subcategory_id: formData.status === 'absent' ? undefined : formData.subcategory_id,
       };
       
       const result = await addAttendanceRecord(attendanceData);

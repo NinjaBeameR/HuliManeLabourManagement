@@ -33,7 +33,7 @@ export default function PaymentForm() {
   });
   
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<PaymentFormData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof PaymentFormData, string>>>({});
 
   useEffect(() => {
     if (formData.worker_id) {
@@ -55,7 +55,7 @@ export default function PaymentForm() {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<PaymentFormData> = {};
+    const newErrors: Partial<Record<keyof PaymentFormData, string>> = {};
     
     if (!formData.worker_id) newErrors.worker_id = 'Worker is required';
     if (!formData.amount || formData.amount <= 0) {
