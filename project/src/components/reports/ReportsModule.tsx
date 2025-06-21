@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Filter, FileText, BarChart3 } from 'lucide-react';
 import { useWorkers, useAttendance, usePayments, calculateWorkerBalance } from '../../hooks/useSupabase';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -82,47 +82,39 @@ export default function ReportsModule() {
     setGenerating(true);
 
     try {
-      // Generate detailed report data
       const detailedData: DetailedReportRow[] = [];
       const summaryData: SummaryReportRow[] = [];
 
-      // Combine attendance and payment records, sort by date
-      const allTransactions = [
-        ...records.map(r => ({
-          ...r,
-          type: 'attendance' as const,
-          amount: r.amount || 0,
-          date: r.date
-        })),
-        ...payments.map(p => ({
-          ...p,
-          type: 'payment' as const,
-          amount: -p.amount,
-          date: p.date,
-          worker: workers.find(w => w.id === p.worker_id)
-        }))
-      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // For each worker (or just the selected one)
+      const filteredWorkers = filters.workerId
+        ? workers.filter(w => w.id === filters.workerId)
+        : workers;
 
-      // Group transactions by worker for running balance
-      const workerBalances: { [workerId: string]: number } = {};
-      workers.forEach(worker => {
-        workerBalances[worker.id] = worker.opening_balance || 0;
-      });
-
-      // Generate detailed report data per worker
-      for (const worker of workers) {
-        // If a specific worker is selected, skip others
-        if (filters.workerId && worker.id !== filters.workerId) continue;
-
+      for (const worker of filteredWorkers) {
+        // Get opening balance as of startDate (if you want to be 100% accurate, call a backend function for this)
         let runningBalance = worker.opening_balance || 0;
 
-        // Get all transactions for this worker, sorted by date
-        const workerTransactions = allTransactions
-          .filter(t => {
-            const id = t.worker_id ?? (t.worker ? t.worker.id : undefined);
-            return id === worker.id;
-          })
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Get all transactions for this worker, sorted by date, and within the date range
+        const workerTransactions = [
+          ...records
+            .filter(r => r.worker_id === worker.id)
+            .filter(r => r.date >= filters.startDate && r.date <= filters.endDate)
+            .map(r => ({
+              ...r,
+              type: 'attendance' as const,
+              amount: r.amount || 0,
+              date: r.date
+            })),
+          ...payments
+            .filter(p => p.worker_id === worker.id)
+            .filter(p => p.date >= filters.startDate && p.date <= filters.endDate)
+            .map(p => ({
+              ...p,
+              type: 'payment' as const,
+              amount: -p.amount,
+              date: p.date
+            }))
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         for (const transaction of workerTransactions) {
           let wageAmount = 0;
