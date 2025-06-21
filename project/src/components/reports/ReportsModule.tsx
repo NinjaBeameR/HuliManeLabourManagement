@@ -91,7 +91,6 @@ export default function ReportsModule() {
         : workers;
 
       for (const worker of filteredWorkers) {
-        // Get opening balance as of startDate (if you want to be 100% accurate, call a backend function for this)
         let runningBalance = worker.opening_balance || 0;
 
         // Get all transactions for this worker, sorted by date, and within the date range
