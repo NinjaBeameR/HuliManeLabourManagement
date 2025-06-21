@@ -150,6 +150,50 @@ export default function ReportsModule() {
         }
       }
 
+      // Add totals row
+      if (filters.workerId) {
+        // Specific worker: show their last running balance
+        const lastRow = detailedData[detailedData.length - 1];
+        if (lastRow) {
+          detailedData.push({
+            ...lastRow,
+            date: '',
+            workerName: 'Total',
+            attendanceStatus: '',
+            category: '',
+            subcategory: '',
+            wageAmount: 0,
+            paymentAmount: 0,
+            runningBalance: lastRow.runningBalance,
+            narration: ''
+          });
+        }
+      } else {
+        // All workers: sum the last running balance for each worker
+        const workerLastBalances: Record<string, number> = {};
+        filteredWorkers.forEach(worker => {
+          const workerRows = detailedData.filter(row => row.workerName === worker.name);
+          if (workerRows.length > 0) {
+            workerLastBalances[worker.name] = workerRows[workerRows.length - 1].runningBalance;
+          }
+        });
+        const totalBalance = Object.values(workerLastBalances).reduce((sum, bal) => sum + bal, 0);
+        if (detailedData.length > 0) {
+          detailedData.push({
+            ...detailedData[detailedData.length - 1],
+            date: '',
+            workerName: 'Total',
+            attendanceStatus: '',
+            category: '',
+            subcategory: '',
+            wageAmount: 0,
+            paymentAmount: 0,
+            runningBalance: totalBalance,
+            narration: ''
+          });
+        }
+      }
+
       // Generate summary report (already correct)
       for (const worker of workers) {
         const workerAttendance = records.filter(r => r.worker_id === worker.id);
